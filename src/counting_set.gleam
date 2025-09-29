@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/result
 import gleam/set.{type Set}
 
 pub opaque type CountingSet(member) {
@@ -20,6 +21,13 @@ pub fn delete(set: CountingSet(member), value: member) -> CountingSet(member) {
     _ -> set.inner |> dict.delete(value)
   }
   |> CountingSet
+}
+
+pub fn delete_or_error(
+  set: CountingSet(member),
+  value: member,
+) -> Result(CountingSet(member), Nil) {
+  set |> get(value) |> result.map(fn(_) { delete(set, value) })
 }
 
 pub fn delete_all(
