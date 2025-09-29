@@ -1,4 +1,5 @@
 import card.{type Card, type UnicornCard, DowngradeCard, UpgradeCard}
+import counting_set.{type CountingSet}
 import filter_types.{
   type CardFilter, type CardFilterChain, type UnicornFilter, AnyCard, AnyUnicorn,
   DowngradeCardFilter, MagicCardFilter, OnlyBabies, OnlyEffect, OnlyMagic,
@@ -46,13 +47,32 @@ fn apply_card_filter_chain(subject: Card, chain: CardFilterChain) -> Bool {
   }
 }
 
-pub fn filter_cards(cards: List(Card), chain: CardFilterChain) -> List(Card) {
+pub fn filter_cards(
+  cards: CountingSet(Card),
+  chain: CardFilterChain,
+) -> CountingSet(Card) {
+  counting_set.filter(cards, fn(card, _) {
+    apply_card_filter_chain(card, chain)
+  })
+}
+
+pub fn filter_cards_list(
+  cards: List(Card),
+  chain: CardFilterChain,
+) -> List(Card) {
   list.filter(cards, apply_card_filter_chain(_, chain))
 }
 
 pub fn filter_stable(
   stable: stable.Stable,
   chain: CardFilterChain,
+) -> CountingSet(Card) {
+  filter_cards(stable.stable_cards_to_card_set(stable), chain)
+}
+
+pub fn filter_stable_list(
+  stable: stable.Stable,
+  chain: CardFilterChain,
 ) -> List(Card) {
-  filter_cards(stable.stable_cards_to_card_list(stable), chain)
+  filter_cards_list(stable.stable_cards_to_card_list(stable), chain)
 }

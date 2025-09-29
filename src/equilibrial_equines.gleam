@@ -1,10 +1,6 @@
 import card.{type Card}
 import gleam/io
-import stable
-
-pub type Player {
-  Player(uuid: String, hand: List(Card), stable: stable.Stable)
-}
+import player.{type Player}
 
 pub type Game {
   Game(state: GameState)

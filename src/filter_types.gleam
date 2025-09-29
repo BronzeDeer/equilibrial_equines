@@ -1,5 +1,3 @@
-import equilibrial_equines
-
 pub type CardFilterChain {
   Leaf(CardFilter)
   And(CardFilterChain, CardFilterChain)
@@ -21,9 +19,4 @@ pub type UnicornFilter {
   OnlyMagic
   OnlyEffect
   AnyUnicorn
-}
-
-pub type PlayerFilter {
-  Not(equilibrial_equines.Player)
-  AnyPlayer
 }
