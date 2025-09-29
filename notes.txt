@@ -1,0 +1,90 @@
+Goals:
+  - Datamodel should be automatically translatable to card test
+  - Allow for free combination of effects so people can make custom cards
+  - Cards should be able to be serialized to a simple json/yaml scheme
+
+Limitations/Decisions:
+  - No inclusion of "memory" in effect chains (i.e. Target Player A, choose a different player, that player does something to a player that is not A)
+    - makes datamodel and code much simpler, we only do yourself/all players/all players, that fulfill condition,other players
+    - individual effects effectively become stateless
+      - We might have to decompose some actions into a selection and returning a "target" which the next action acts on (target might be an object listing the specific card and affect player etc)
+    - FMK erratum eliminated this complication specifically for example
+
+Datamodel sketch:
+
+Trigger = OnEvent TriggerFilter (Instead EffectChain | EffectChain) # The dataformat should enforce that the "instead only appears once near top-level, but can be technically pre-empted by ifs and mays
+TriggerFilter = ActionFilter CardFilter
+ActionFilter = PlayerFilter (Destroy | Sacrifice | Discard | Play)
+ContinousEffect = Flyer | Immune (Destroy | Sacrifice) | Trigger
+OnPhase = Phase EffectChain
+CardEffect = Destroy CardFilter N | Sacrifice CardFilter N | Discard Target N | SummonBaby N | Play CardFilter N | SearchFromPile CardFilter Pile N | GiveCards N | PullCards Pile N | Steal N
+EffectChain = EndChain | (EffectChain | [EffectChain]) | Then CardEffect EffectChain | May EffectChain | EitherOr EffectChain EffectChain | SwitchResolvingPlayer EffectChain
+# TODO: Conditionals both for If and Filter
+
+Player = {
+  Hand =  [Card]
+  Field = {
+    Unicorns = [UnicornCard]
+    UpDown = [UpDownCard]
+  }
+}
+Game = {
+  MetaInfo: GameMetaInfo # TODO
+  State: GameState
+  Turn: # TODO put in gamestate or outside?
+}
+GameState = {
+  DrawPile: [Card]
+  DiscardPile = [Card]
+  Nursery = [Number]
+  Players = (Player | Player | [Player])
+}
+
+Open Questions:
+  - To correctly model impossible actions:
+    - Either most effects need an "N", so that they work completely or not at all
+    - or, atleast internally we need a SelectN and SelectNDistinct and DestroySelected etc atoms
+      - the non distinct case can likely be modelled as sequential effects (I think Fuck,Mary,Kill is sequential rather than failing if you couldn't do all effects)
+        - Correction: FMK is two sequential effects: Other player discards. Next Force give card to other play, then (i.e. doesn't happen if player has no card) destroy
+
+  - Principle of least surprise atleast for datamodel:
+    - Order of Number, Filter, Target?
+    - Depends on if we internally decompose many effects into select and action
+
+  - Model EitherOr as list instead of chained binary choices?
+
+  - How to model the reveal card, then effect depending on card type thing?
+
+  - For semi-late: Separate Baby from their presentation (They all are functionally equivalent, so people with different skins etc should be able to view them differently)
+    - Idea: Server choses a number for each baby, rendering clients can just permute their own set of added baby cards and render number % total
+      - alternative: Server does the permutation and just runs on a set of 0-127 or something, increases the chance that babies that are stolen back and forth will remain the same
+    - Same for basics actually
+
+  - For later: How to do instants without having like a 5 second timeout for every action?
+    - Best choice is probably to create game state changes as deltas that can be cleanly rewound and giving every player with instants a queue of actions that can be instanted to click on within X seconds
+      - unclear if we should do the same with cards that can sac themselves for protection
+        - single effect or generic: "On X: May"
+      - needs deterministic shuffles then:
+        - save a nonce, which the server combines with a secret to create a PRNG permutation
+        - nonce goes into the log and can be used to recover the inverse permutation
+      - the internal game engine can stay agnostic of that and live in the fantasy world of a clear sequence of resolved effects, with the multiplayer coordination server handling rewinding
+  
+  - Should card instance be stateful?
+    - Should every card instance have a uuid and track where it moves or should it internally happen as "remove" and "add"
+      - latter is probably easier
+      - in higher levels we still need "move" like verbs, so that text and replay logs make sense to players
+      - in that case we probably need to model hands and fields as counter sets?!?
+        - let's start with lists for ease of use
+    - Depending on how we model continous effects and negating them we might need uuids or other pointer likes
+      - We can simplify this if we don't care for performance (seriously, as if iteration like 30 cards in hand and play for effects is difficult)
+    - Probably needs a priority system for continous actions to make sure masquerades etc go first
+    - Probably need a "negated" effectChain or continous effect to allow tracking that
+
+
+- Roadmap:
+  - Model playing, drawing, phases
+  - Model winning
+  - Model Sac and Destroy
+  - Model Discard
+  - Model Flyer
+  - Model SwitchPlayer?
