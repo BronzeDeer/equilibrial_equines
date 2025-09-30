@@ -5,7 +5,7 @@ pub type Effect {
   Discard(num: Int)
   Destroy(num: Int, filter: filter_types.CardFilter)
   SummonBaby
-  //PlayFromHand(filter: filter_types.CardFilter)
+  PlayFromHand(filter: filter_types.CardFilter)
 }
 
 pub type EffectChain {

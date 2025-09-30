@@ -1,3 +1,8 @@
+Todo:
+  - Replace own countingSet with `gleam add tote`
+  - finalize test code
+    - fix recursive generators
+
 Goals:
   - Datamodel should be automatically translatable to card test
   - Allow for free combination of effects so people can make custom cards

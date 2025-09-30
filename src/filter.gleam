@@ -11,7 +11,7 @@ import stable
 fn apply_unicorn_filter(subject: UnicornCard, filter: UnicornFilter) -> Bool {
   case subject.body, filter {
     _, AnyUnicorn -> True
-    card.BabyUnicorn, OnlyBabies -> True
+    card.BabyUnicorn(_), OnlyBabies -> True
     card.StandardUnicorn, OnlyStandard -> True
     card.MagicUnicorn(_), OnlyMagic -> True
     card.MagicUnicorn(_), OnlyEffect -> True
@@ -74,5 +74,5 @@ pub fn filter_stable_list(
   stable: stable.Stable,
   chain: CardFilterChain,
 ) -> List(Card) {
-  filter_cards_list(stable.stable_cards_to_card_list(stable), chain)
+  filter_cards_list(stable.to_card_list(stable), chain)
 }

@@ -7,7 +7,7 @@ pub type Stable {
   Stable(unicorns: CountingSet(UnicornCard), up_down: CountingSet(UpDownCard))
 }
 
-pub fn stable_cards_to_card_list(stable: Stable) -> List(card.Card) {
+pub fn to_card_list(stable: Stable) -> List(card.Card) {
   list.append(
     stable.unicorns |> counting_set.to_list |> list.map(card.UC),
     stable.up_down |> counting_set.to_list |> list.map(card.UD),
@@ -60,4 +60,8 @@ pub fn remove_card(stable: Stable, card: Card) -> Result(Stable, Card) {
     }
     _ -> Error(card)
   }
+}
+
+pub fn new() {
+  Stable(counting_set.new(), counting_set.new())
 }
