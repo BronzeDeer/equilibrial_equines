@@ -26,8 +26,11 @@ pub fn delete(set: CountingSet(member), value: member) -> CountingSet(member) {
 pub fn delete_or_error(
   set: CountingSet(member),
   value: member,
-) -> Result(CountingSet(member), Nil) {
-  set |> get(value) |> result.map(fn(_) { delete(set, value) })
+) -> Result(CountingSet(member), member) {
+  case set |> get(value) {
+    Ok(_) -> delete(set, value) |> Ok
+    _ -> value |> Error
+  }
 }
 
 pub fn delete_all(

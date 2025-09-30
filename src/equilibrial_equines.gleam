@@ -1,6 +1,8 @@
 import card.{type Card}
+import counting_set.{type CountingSet}
 import gleam/dict.{type Dict}
 import gleam/io
+import gleam/result
 import player.{type Player, type PlayerId}
 
 pub type Game {
@@ -13,6 +15,9 @@ pub type DrawPile =
 pub type DiscardPile =
   List(Card)
 
+pub type Nursery =
+  List(Int)
+
 pub type Pile {
   Draw(DrawPile)
   Discard(DiscardPile)
@@ -22,10 +27,40 @@ pub type GameState {
   GameState(
     draw_pile: DrawPile,
     discard_pile: DiscardPile,
-    nursery: List(Int),
+    nursery: Nursery,
     players: Dict(PlayerId, Player),
     // Todo: How to do define non-empty list
   )
+}
+
+pub fn with_draw_pile(state: GameState, pile: DrawPile) -> GameState {
+  GameState(..state, draw_pile: pile)
+}
+
+pub fn with_discard_pile(state: GameState, pile: DiscardPile) -> GameState {
+  GameState(..state, discard_pile: pile)
+}
+
+pub fn with_nursery(state, nursery: Nursery) -> GameState {
+  GameState(..state, nursery: nursery)
+}
+
+pub fn with_player(state: GameState, player: Player) -> GameState {
+  GameState(..state, players: state.players |> dict.insert(player.uuid, player))
+}
+
+pub fn with_existing_player(
+  state: GameState,
+  player: Player,
+) -> Result(GameState, Player) {
+  state.players
+  |> dict.get(player.uuid)
+  |> result.map_error(fn(_) { player })
+  |> result.map(fn(_) { with_player(state, player) })
+}
+
+pub fn get_player(state: GameState, pid: PlayerId) -> Result(Player, PlayerId) {
+  state.players |> dict.get(pid) |> result.map_error(fn(_) { pid })
 }
 
 pub fn main() -> Nil {

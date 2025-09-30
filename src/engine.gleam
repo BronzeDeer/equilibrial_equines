@@ -1,4 +1,4 @@
-import card.{type Card}
+import card.{type Card, BabyUnicorn, UnicornCard}
 import counting_set as cs
 import equilibrial_equines.{type GameState, type Pile, GameState} as ee
 import gleam/dict
@@ -16,6 +16,7 @@ pub type StateTransition {
   Search(player: PlayerId, card: Card, pile: Pile)
   Bounce(player: PlayerId, card: Card)
   //Neigh(player: PlayerId, card: Card, transition: StateTransition)
+  // Todo: Pile shuffling
 }
 
 pub type InvalidTransition {
@@ -24,6 +25,12 @@ pub type InvalidTransition {
   CardNotInPile(card: Card, pile: Pile)
   NoSuchPlayer(player: PlayerId)
   CardNotInStable(card: Card, player: Player)
+  CardNotInHand(card: Card, player: Player)
+  BabyNotFrontOfNursery(card: Card, front: Int)
+  BabyFromToPile(card: Card, pile: Pile)
+  BabyFromToHand(card: Card, pid: PlayerId)
+  NotABaby(card: Card)
+  NotAStableCard(card: Card)
 }
 
 fn remove_first(list: List(member), value: member) -> Result(List(member), Nil) {
@@ -35,131 +42,220 @@ fn remove_first(list: List(member), value: member) -> Result(List(member), Nil) 
   }
 }
 
-fn apply_draw(
-  state: GameState,
-  pid: PlayerId,
-) -> Result(GameState, InvalidTransition) {
-  use player <- try(
-    state.players
-    |> dict.get(pid)
-    |> map_error(fn(_) { NoSuchPlayer(pid) }),
-  )
+// Atm there are not effects that generate cards or tokens from thin air, therefore there is a conservation of cards
+// We can enfore the correctness of this via the data modell
+// A card can exist in only a few places (either pile, the nursery, each player's hand, or each player's stable)
 
-  case state.draw_pile {
-    [head, ..tail] -> {
-      let p_prime = Player(..player, hand: player.hand |> cs.insert(head))
+pub type CardMovementFrom {
+  FromNursery
+  FromPile(pile: Pile)
+  FromHand(pid: PlayerId)
+  FromStable(pid: PlayerId)
+}
 
-      GameState(
-        ..state,
-        draw_pile: tail,
-        players: state.players |> dict.insert(pid, p_prime),
-      )
-      |> Ok
-    }
-    _ -> Error(EmptyDrawPile)
+pub type CardMovementTo {
+  ToNursery
+  ToPile(pile: Pile)
+  ToHand(pid: PlayerId)
+  ToStable(pid: PlayerId)
+}
+
+pub type CardMovement {
+  CardMovement(card: Card, from: CardMovementFrom, to: CardMovementTo)
+}
+
+fn invert_from(from: CardMovementFrom) -> CardMovementTo {
+  case from {
+    FromNursery -> ToNursery
+    FromPile(p) -> ToPile(p)
+    FromHand(p) -> ToHand(p)
+    FromStable(p) -> ToStable(p)
   }
 }
 
-fn apply_destroy(
-  state: GameState,
-  pid: PlayerId,
-  card: Card,
-) -> Result(GameState, InvalidTransition) {
-  use player <- try(
-    state.players
-    |> dict.get(pid)
-    |> map_error(fn(_) { NoSuchPlayer(pid) }),
-  )
-
-  use p_prime <- try(
-    player.stable
-    |> stable.remove_card(card)
-    |> map_error(fn(_) { CardNotInStable(card, player) })
-    |> result.map(fn(x) { Player(..player, stable: x) }),
-  )
-
-  GameState(
-    ..state,
-    discard_pile: state.discard_pile |> list.prepend(card),
-    players: state.players |> dict.insert(pid, p_prime),
-  )
-  |> Ok
+fn invert_to(to: CardMovementTo) -> CardMovementFrom {
+  case to {
+    ToNursery -> FromNursery
+    ToPile(p) -> FromPile(p)
+    ToHand(p) -> FromHand(p)
+    ToStable(p) -> FromStable(p)
+  }
 }
 
-fn apply_bounce(
-  state: GameState,
-  pid: PlayerId,
-  card: Card,
-) -> Result(GameState, InvalidTransition) {
-  use player <- try(
-    state.players
-    |> dict.get(pid)
-    |> map_error(fn(_) { NoSuchPlayer(pid) }),
-  )
-
-  use p_prime <- try(
-    player.stable
-    |> stable.remove_card(card)
-    |> map_error(fn(_) { CardNotInStable(card, player) })
-    |> result.map(fn(x) {
-      Player(..player, hand: player.hand |> cs.insert(card), stable: x)
-    }),
-  )
-
-  GameState(..state, players: state.players |> dict.insert(pid, p_prime))
-  |> Ok
+pub fn invert_movement(move: CardMovement) -> CardMovement {
+  CardMovement(move.card, invert_to(move.to), invert_from(move.from))
 }
 
-fn apply_search(
+fn apply_from(
   state: GameState,
-  pid: PlayerId,
+  card: Card,
+  from: CardMovementFrom,
+) -> Result(GameState, InvalidTransition) {
+  case from {
+    FromNursery -> from_nursery(state, card)
+    FromPile(pile) -> from_pile(state, card, pile)
+    FromHand(pid) -> from_hand(state, card, pid)
+    FromStable(pid) -> from_stable(state, card, pid)
+  }
+}
+
+fn apply_to(
+  state: GameState,
+  card: Card,
+  to: CardMovementTo,
+) -> Result(GameState, InvalidTransition) {
+  case to {
+    ToNursery -> to_nursery(state, card)
+    ToPile(pile) -> to_pile(state, card, pile)
+    ToHand(pid) -> to_hand(state, card, pid)
+    ToStable(pid) -> to_stable(state, card, pid)
+  }
+}
+
+fn from_nursery(
+  state: GameState,
+  card: Card,
+) -> Result(GameState, InvalidTransition) {
+  case card, state.nursery {
+    card.UC(UnicornCard(_, body: BabyUnicorn(id1))), [id2, ..tail]
+      if id1 == id2
+    -> GameState(..state, nursery: tail) |> Ok
+    card.UC(UnicornCard(_, body: BabyUnicorn(_))), [id, ..] ->
+      BabyNotFrontOfNursery(card, id) |> Error
+    _, _ -> NotABaby(card) |> Error
+  }
+}
+
+fn to_nursery(
+  state: GameState,
+  card: Card,
+) -> Result(GameState, InvalidTransition) {
+  case card, state.nursery {
+    card.UC(UnicornCard(_, body: BabyUnicorn(id))), nurse ->
+      GameState(..state, nursery: [id, ..nurse]) |> Ok
+    _, _ -> NotABaby(card) |> Error
+  }
+}
+
+fn from_pile(
+  state: GameState,
   card: Card,
   pile: Pile,
 ) -> Result(GameState, InvalidTransition) {
-  use player <- try(
-    state.players
-    |> dict.get(pid)
-    |> map_error(fn(_) { NoSuchPlayer(pid) }),
-  )
-
-  let p_prime = Player(..player, hand: player.hand |> cs.insert(card))
-
-  case pile {
-    ee.Draw(dp) ->
-      dp
+  case card, pile {
+    card.UC(UnicornCard(_, body: BabyUnicorn(_))), _ ->
+      BabyFromToPile(card, pile) |> Error
+    _, ee.Draw(_) ->
+      state.draw_pile
       |> remove_first(card)
-      |> map_error(fn(_) { CardNotInPile(card, pile) })
-      |> result.map(fn(x) {
-        GameState(
-          ..state,
-          players: state.players |> dict.insert(pid, p_prime),
-          draw_pile: x,
-        )
-      })
-
-    ee.Discard(dp) ->
-      dp
+      |> map_error(fn(_) { BabyFromToPile(card, pile) })
+      |> result.map(fn(p) { GameState(..state, draw_pile: p) })
+    _, ee.Discard(_) ->
+      state.discard_pile
       |> remove_first(card)
-      |> map_error(fn(_) { CardNotInPile(card, pile) })
-      |> result.map(fn(x) {
-        GameState(
-          ..state,
-          players: state.players |> dict.insert(pid, p_prime),
-          discard_pile: x,
-        )
-      })
+      |> map_error(fn(_) { BabyFromToPile(card, pile) })
+      |> result.map(fn(p) { GameState(..state, discard_pile: p) })
   }
 }
 
-pub fn apply(
+fn to_pile(
   state: GameState,
-  trans: StateTransition,
+  card: Card,
+  pile: Pile,
 ) -> Result(GameState, InvalidTransition) {
-  case trans {
-    Draw(pid) -> apply_draw(state, pid)
-    Destroy(pid, card) -> apply_destroy(state, pid, card)
-    Bounce(pid, card) -> apply_bounce(state, pid, card)
-    Search(pid, card, pile) -> apply_search(state, pid, card, pile)
-    _ -> Error(InvalidTransition(state, trans))
+  case card, pile {
+    card.UC(UnicornCard(_, body: BabyUnicorn(_))), _ ->
+      BabyFromToPile(card, pile) |> Error
+    _, ee.Draw(_) ->
+      GameState(
+        ..state,
+        draw_pile: state.draw_pile
+          |> list.prepend(card),
+      )
+      |> Ok
+    _, ee.Discard(_) ->
+      GameState(
+        ..state,
+        discard_pile: state.discard_pile
+          |> list.prepend(card),
+      )
+      |> Ok
   }
+}
+
+fn from_hand(
+  state: GameState,
+  card: Card,
+  pid: PlayerId,
+) -> Result(GameState, InvalidTransition) {
+  case card {
+    card.UC(UnicornCard(_, body: BabyUnicorn(_))) ->
+      BabyFromToHand(card, pid) |> Error
+    _ -> {
+      use player <- try(state |> ee.get_player(pid) |> map_error(NoSuchPlayer))
+
+      player.hand
+      |> cs.delete_or_error(card)
+      |> map_error(CardNotInHand(_, player))
+      |> result.map(player.with_hand(player, _))
+      |> result.map(ee.with_player(state, _))
+    }
+  }
+}
+
+fn to_hand(
+  state: GameState,
+  card: Card,
+  pid: PlayerId,
+) -> Result(GameState, InvalidTransition) {
+  case card {
+    card.UC(UnicornCard(_, body: BabyUnicorn(_))) ->
+      BabyFromToHand(card, pid) |> Error
+    _ -> {
+      use player <- try(state |> ee.get_player(pid) |> map_error(NoSuchPlayer))
+
+      player.hand
+      |> cs.insert(card)
+      |> player.with_hand(player, _)
+      |> ee.with_player(state, _)
+      |> Ok
+    }
+  }
+}
+
+fn from_stable(
+  state: GameState,
+  card: Card,
+  pid: PlayerId,
+) -> Result(GameState, InvalidTransition) {
+  use player <- try(state |> ee.get_player(pid) |> map_error(NoSuchPlayer))
+
+  player.stable
+  |> stable.remove_card(card)
+  |> map_error(CardNotInStable(_, player))
+  |> result.map(player.with_stable(player, _))
+  |> result.map(ee.with_player(state, _))
+}
+
+fn to_stable(
+  state: GameState,
+  card: Card,
+  pid: PlayerId,
+) -> Result(GameState, InvalidTransition) {
+  use player <- try(state |> ee.get_player(pid) |> map_error(NoSuchPlayer))
+
+  player.stable
+  |> stable.add_card(card)
+  |> map_error(NotAStableCard)
+  |> result.map(player.with_stable(player, _))
+  |> result.map(ee.with_player(state, _))
+}
+
+fn apply_movement(
+  state: GameState,
+  move: CardMovement,
+) -> Result(GameState, InvalidTransition) {
+  state
+  |> apply_from(move.card, move.from)
+  |> result.try(apply_to(_, move.card, move.to))
 }

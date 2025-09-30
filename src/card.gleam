@@ -10,7 +10,7 @@ pub type MagicBody {
 
 pub type UnicornBody {
   StandardUnicorn
-  BabyUnicorn
+  BabyUnicorn(id: Int)
   MagicUnicorn(effect: EffectChain)
   UltimateUnicorn(effect: EffectChain)
 }
