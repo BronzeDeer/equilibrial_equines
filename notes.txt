@@ -1,3 +1,22 @@
+Redo data model?
+
+Card = UnicornCard | BabyCard | SpellCard | UpDownCard
+Hand = Bag(HandPileCard)
+Pile = List(HandPileCard)
+Nursery = List(BabyCard)
+
+HandPileCard = UnicornCard | SpellCard | UpDownCard
+StableCard = UnicornCard | BabyCard | UpDownCard
+SpellCard = MagicCard | InstantCard
+
+Transitions: 
+UnicornTransitions = Stable | Hand | Pile
+BabyTransitions = Nursery | Stable
+SpellTransitions = Hand | Pile
+UpDownTransitions = Stable | Hand | Pile
+
+
+
 Todo:
   - Replace own countingSet with `gleam add tote`
   - finalize test code

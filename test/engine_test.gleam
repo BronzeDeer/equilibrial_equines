@@ -6,6 +6,8 @@ import qcheck.{
   return,
 }
 
-pub fn valid_from_gen(state: GameState) -> Generator(#(CardMovementFrom, Card)) {
+pub fn valid_from_gen(
+  state: GameState,
+) -> Result(Generator(#(CardMovementFrom, Card)), Nil) {
   todo
 }

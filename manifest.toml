@@ -11,6 +11,7 @@ packages = [
   { name = "prng", version = "4.0.1", build_tools = ["gleam"], requirements = ["gleam_bitwise", "gleam_stdlib", "gleam_yielder"], otp_app = "prng", source = "hex", outer_checksum = "695AB70E4BE713042062E901975FC08D1EC725B85B808D4786A14C406ADFBCF1" },
   { name = "qcheck", version = "1.0.0", build_tools = ["gleam"], requirements = ["exception", "gleam_regexp", "gleam_stdlib", "gleam_yielder", "prng"], otp_app = "qcheck", source = "hex", outer_checksum = "6DAE7925E350480CE813F80D07AC4B9BAB25360F0D63EC98C5742D8456C9A9A1" },
   { name = "qcheck_gleeunit_utils", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "gleeunit"], otp_app = "qcheck_gleeunit_utils", source = "hex", outer_checksum = "B16411414C96CE60319C463F9DCE552489F65E179FB2A9AC7D22321C952074D3" },
+  { name = "tote", version = "1.0.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "tote", source = "hex", outer_checksum = "A249892E26A53C668897F8D47845B0007EEE07707A1A03437487F0CD5A452CA5" },
 ]
 
 [requirements]
@@ -18,3 +19,4 @@ gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 qcheck = { version = ">= 1.0.0 and < 2.0.0" }
 qcheck_gleeunit_utils = { version = ">= 1.0.0 and < 2.0.0" }
+tote = { version = ">= 1.0.2 and < 2.0.0" }
