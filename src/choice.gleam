@@ -1,13 +1,13 @@
-import card.{type Card}
-import counting_set.{type CountingSet, is_subset}
+import card.{type HandPileCard}
 import gleam/dict.{type Dict}
+import gleam/int
 import gleam/list
 import gleam/set.{type Set}
-import player.{type PlayerId}
-import stable.{type Stable}
+import player.{type PlayerId, type Stable}
+import tote/bag.{type Bag}
 
 pub type Selection {
-  CardSelection(num: Int, options: CountingSet(Card))
+  HandPileSelection(num: Int, options: Bag(HandPileCard))
   CardsFromStableSelection(
     num: Int,
     options: Dict(PlayerId, Stable),
@@ -17,32 +17,35 @@ pub type Selection {
 }
 
 pub type Choice {
-  Cards(cards: List(Card))
+  HandPileCards(cards: Bag(HandPileCard))
   CardsFromStable(cards: Dict(PlayerId, Stable))
   Players(Set(PlayerId))
 }
 
-fn from_stable_correct_count(
-  num: Int,
-  choices: Dict(PlayerId, CountingSet(Card)),
-) -> Bool {
+fn bag_total(bag: Bag(a)) -> Int {
+  bag.fold(bag, 0, fn(acc, _, count) { int.add(count, acc) })
+}
+
+fn from_stable_correct_count(num: Int, choices: Dict(PlayerId, Stable)) -> Bool {
   let total =
     choices
     |> dict.values
     |> list.fold(0, fn(acc, stable_cards) {
-      acc + counting_set.total_count(stable_cards)
+      stable_cards |> bag_total |> int.add(acc)
     })
   num == total
 }
 
 fn from_stable_correct_subset(
-  options: Dict(PlayerId, CountingSet(Card)),
-  choices: Dict(PlayerId, CountingSet(Card)),
+  options: Dict(PlayerId, Stable),
+  choices: Dict(PlayerId, Stable),
 ) -> Bool {
   choices
   |> dict.fold(True, fn(acc, pid, choice_set) {
     case options |> dict.get(pid) {
-      Ok(option_set) -> acc && choice_set |> counting_set.is_subset(option_set)
+      Ok(option_set) ->
+        // A intersect B == A <=> A subset B
+        acc && bag.intersect(choice_set, option_set) == choice_set
       _ -> False
     }
   })

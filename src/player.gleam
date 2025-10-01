@@ -1,19 +1,25 @@
-import card.{type Card}
+import card.{type HandPileCard, type StableCard}
 import counting_set.{type CountingSet}
-import stable.{type Stable}
+import tote/bag.{type Bag}
 
 pub type PlayerId =
   String
 
+pub type PlayerHand =
+  Bag(HandPileCard)
+
+pub type Stable =
+  Bag(StableCard)
+
 pub type Player {
-  Player(uuid: PlayerId, hand: CountingSet(Card), stable: Stable)
+  Player(uuid: PlayerId, hand: PlayerHand, stable: Stable)
 }
 
-pub fn get_hand(player: Player) -> CountingSet(Card) {
+pub fn get_hand(player: Player) -> PlayerHand {
   player.hand
 }
 
-pub fn with_hand(player: Player, hand: CountingSet(Card)) -> Player {
+pub fn with_hand(player: Player, hand: PlayerHand) -> Player {
   Player(..player, hand: hand)
 }
 

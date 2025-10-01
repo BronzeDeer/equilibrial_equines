@@ -10,24 +10,39 @@ pub type MagicBody {
 
 pub type UnicornBody {
   StandardUnicorn
-  BabyUnicorn(id: Int)
   MagicUnicorn(effect: EffectChain)
   UltimateUnicorn(effect: EffectChain)
 }
 
-pub type Card {
+pub type BabyCard {
+  BabyCard(id: Int)
+}
+
+pub type HandPileCard {
   UC(UnicornCard)
-  MC(MagicCard)
+  SC(SpellCard)
   UD(UpDownCard)
+}
+
+pub type UnicornStableStatus {
+  Normal
+  // Blinded
+  // Masqueraded
+}
+
+pub type StableCard {
+  StabledUnicorn(card: UnicornCard, status: UnicornStableStatus)
+  StabledUpDown(card: UpDownCard)
+  StabledBaby(card: BabyCard, status: UnicornStableStatus)
 }
 
 pub type UnicornCard {
   UnicornCard(meta: CardMeta, body: UnicornBody)
-  //InstantCard(meta: InstantBody)
 }
 
-pub type MagicCard {
+pub type SpellCard {
   MagicCard(meta: CardMeta, body: EffectChain)
+  //InstantCard(meta: CardMeta, body: InstantBody)
 }
 
 pub type UpDownCard {

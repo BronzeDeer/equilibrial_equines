@@ -7,17 +7,70 @@ import gleam/result.{map_error, try}
 import player.{type Player, type PlayerId, Player}
 import stable
 
-pub type StateTransition {
-  Play(player: PlayerId, card: Card)
-  Discard(player: PlayerId, card: Card)
-  // Generic Action for stable to discard (Sac and Destroy)
-  Destroy(player: PlayerId, card: Card)
-  Draw(player: PlayerId)
-  Search(player: PlayerId, card: Card, pile: Pile)
-  Bounce(player: PlayerId, card: Card)
-  //Neigh(player: PlayerId, card: Card, transition: StateTransition)
-  // Todo: Pile shuffling
+pub type UnicornSpot {
+  Hand(PlayerHandFromTo)
+  Pile(PileFromTo)
+  Stable(PlayerStableFromTo)
 }
+
+pub type PileFromTo {
+  Draw
+  Discard
+}
+
+pub type PlayerHandFromTo {
+  PlayerHandFromTo(id: PlayerId)
+}
+
+pub type PlayerStableFromTo {
+  PlayerStableFromTo(id: PlayerId)
+}
+
+pub type SpellSpot {
+  Hand(PlayerHandFromTo)
+  Pile(PileFromTo)
+}
+
+pub type BabySpot {
+  Stable(PlayerStableFromTo)
+  Nursery
+}
+
+pub type UpDownSpot {
+  Hand(PlayerHandFromTo)
+  Pile(PileFromTo)
+  Stable(PlayerStableFromTo)
+}
+
+pub type UnicornTransition {
+  UnicornTransition(from: UnicornSpot, card: UnicornCard, to: UnicornSpot)
+}
+
+pub type UpDownTransition {
+  UpDownTransition(from: UpDownSpot, card: UpDownCard, to: UpDownSpot)
+}
+
+pub type SpellTransition {
+  SpellTransition(from: SpellSpot, card: SpellCard, to: SpellSpot)
+}
+
+pub type BabyTransition {
+  BabyTransition(from: BabySpot, card: BabyCard, to: BabySpot)
+}
+
+pub type StateTransition
+
+// pub type StateTransition {
+//   Play(player: PlayerId, card: Card)
+//   Discard(player: PlayerId, card: Card)
+//   // Generic Action for stable to discard (Sac and Destroy)
+//   Destroy(player: PlayerId, card: Card)
+//   Draw(player: PlayerId)
+//   Search(player: PlayerId, card: Card, pile: Pile)
+//   Bounce(player: PlayerId, card: Card)
+//   //Neigh(player: PlayerId, card: Card, transition: StateTransition)
+//   // Todo: Pile shuffling
+// }
 
 pub type InvalidTransition {
   InvalidTransition(state: GameState, trans: StateTransition)
