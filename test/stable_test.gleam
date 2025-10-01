@@ -3,11 +3,8 @@ import counting_set as cs
 import gleam/list
 import gleam/result
 import gleeunit/should
-import qcheck.{
-  type Generator, bind, from_generators, generic_list, map, return,
-  small_non_negative_int, tuple2,
-}
-import stable.{type Stable, Stable}
+import qcheck.{bind, generic_list, map, return, small_non_negative_int, tuple2}
+import stable.{Stable}
 
 import qcheck_gleeunit_utils/test_spec
 
@@ -22,27 +19,33 @@ pub fn stable_gen() {
   Stable(unicorns, updowns) |> return
 }
 
-// pub fn list_roundtrip_add_test() {
-//   use stable <- qcheck.given(stable_gen())
+pub fn list_roundtrip_add_test() {
+  use <- test_spec.make
 
-//   stable
-//   |> stable.to_card_list
-//   |> list.try_fold(stable.new(), stable.add_card)
-//   |> result.map(should.equal(stable, _))
-//   |> should.be_ok
-// }
+  use stable <- qcheck.given(stable_gen())
 
-// pub fn list_roundtrip_remove_test() {
-//   use stable <- qcheck.given(stable_gen())
+  stable
+  |> stable.to_card_list
+  |> list.try_fold(stable.new(), stable.add_card)
+  |> result.map(should.equal(stable, _))
+  |> should.be_ok
+}
 
-//   stable
-//   |> stable.to_card_list
-//   |> list.try_fold(stable, stable.remove_card)
-//   |> result.map(should.equal(stable.new(), _))
-//   |> should.be_ok
-// }
+pub fn list_roundtrip_remove_test() {
+  use <- test_spec.make
+
+  use stable <- qcheck.given(stable_gen())
+
+  stable
+  |> stable.to_card_list
+  |> list.try_fold(stable, stable.remove_card)
+  |> result.map(should.equal(stable.new(), _))
+  |> should.be_ok
+}
 
 pub fn list_bag_equiv_test() {
+  use <- test_spec.make
+
   use stable <- qcheck.given(stable_gen())
 
   stable

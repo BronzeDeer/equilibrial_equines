@@ -3,9 +3,8 @@ import effect.{
   type Effect, type EffectChain, Destroy, Discard, May, Plain, PlayFromHand,
   Sacrifice, Sequence, SummonBaby, Then,
 }
-import qcheck.{
-  type Generator, from_generators, from_weighted_generators, map, map2, return,
-}
+import qcheck.{type Generator, from_generators, list_from, map, map2, return}
+import util
 
 pub fn sacrifice_effect_gen() {
   map2(qcheck.small_strictly_positive_int(), card_filter_gen(), Sacrifice)
@@ -24,20 +23,9 @@ pub fn play_effect_gen() {
 }
 
 pub fn effect_chain_gen() -> Generator(EffectChain) {
-  from_weighted_generators(#(900, map(effect_gen(), Plain)), [
-    #(90, map(effect_chain_gen(), May)),
-    #(9, map2(effect_chain_gen(), effect_chain_gen(), Then)),
-    #(
-      1,
-      map(
-        qcheck.generic_list(
-          effect_chain_gen(),
-          qcheck.small_strictly_positive_int(),
-        ),
-        Sequence,
-      ),
-    ),
-  ])
+  util.gen_recursive(map(effect_gen(), Plain), fn(g) {
+    from_generators(map(g, May), [map2(g, g, Then), map(list_from(g), Sequence)])
+  })
 }
 
 pub fn effect_gen() -> Generator(Effect) {

@@ -1,12 +1,8 @@
-import card.{BabyUnicorn, UnicornCard}
-import counting_set.{insert, new}
-import gleeunit
-import player.{Player}
 import qcheck_gleeunit_utils/run
-import stable
 
 pub fn main() -> Nil {
   //gleeunit.main()
+  // Run parallel tests via the gleeunit utils
   run.run_gleeunit()
 }
 
