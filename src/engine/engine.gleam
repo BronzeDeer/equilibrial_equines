@@ -17,6 +17,9 @@ import engine/transitions/spell.{type SpellTransition}
 import engine/transitions/unicorn.{type UnicornTransition}
 import engine/transitions/updown.{type UpDownTransition}
 
+// This is a low level engine which enforces correct card placement and movement through typing
+// Higher level effects and actions can then easily be translated down to a sequence of these state transitions
+
 pub type StateTransition {
   StateTransBaby(BabyTransition)
   StateTransSpell(SpellTransition)
@@ -38,6 +41,7 @@ pub type StateTransition {
 
 pub type InvalidTransition {
   CardNotInPileAtPosition(card: HandPileCard, pile: Pile, pos: Int)
+  PilePositionOutOfBounds(pile: Pile, pos: Int)
   NoSuchPlayer(player: PlayerId)
   CardNotInStable(card: StableCard, player: Player)
   CardNotInHand(card: HandPileCard, player: Player)
@@ -79,32 +83,35 @@ fn apply_from(
   }
 }
 
-fn apply_to(state: GameState, trans: StateTransition) -> Result(GameState, Nil) {
+fn apply_to(
+  state: GameState,
+  trans: StateTransition,
+) -> Result(GameState, InvalidTransition) {
   case trans {
     StateTransUnicorn(t) -> {
       case t.to {
-        unicorn.Hand(to) -> to_hand(state, card.Unicorn(t.card), to)
+        unicorn.Hand(to) -> to_hand(state, card.Unicorn(t.card), to.id)
         unicorn.Pile(to) -> to_pile(state, card.Unicorn(t.card), to)
         unicorn.Stable(to, status) ->
-          to_stable(state, card.StabledUnicorn(t.card, status), to)
+          to_stable(state, card.StabledUnicorn(t.card, status), to.id)
       }
     }
     StateTransBaby(t) ->
       case t.to {
         baby.Stable(to, status) ->
-          to_stable(state, card.StabledBaby(t.card, status), to)
+          to_stable(state, card.StabledBaby(t.card, status), to.id)
         baby.Nursery -> to_nursery(state, t.card)
       }
     StateTransSpell(t) ->
       case t.to {
-        spell.Hand(to) -> to_hand(state, card.Spell(t.card), to)
+        spell.Hand(to) -> to_hand(state, card.Spell(t.card), to.id)
         spell.Pile(to) -> to_pile(state, card.Spell(t.card), to)
       }
     StateTransUpDown(t) ->
       case t.to {
-        updown.Hand(to) -> to_hand(state, card.UpDown(t.card), to)
+        updown.Hand(to) -> to_hand(state, card.UpDown(t.card), to.id)
         updown.Pile(to) -> to_pile(state, card.UpDown(t.card), to)
-        updown.Stable(to) -> to_stable(state, card.StabledUpDown(t.card), to)
+        updown.Stable(to) -> to_stable(state, card.StabledUpDown(t.card), to.id)
       }
   }
 }
@@ -122,13 +129,9 @@ fn from_nursery(
 
 fn to_nursery(
   state: GameState,
-  card: Card,
+  card: BabyCard,
 ) -> Result(GameState, InvalidTransition) {
-  case card, state.nursery {
-    card.UC(UnicornCard(_, body: BabyUnicorn(id))), nurse ->
-      GameState(..state, nursery: [id, ..nurse]) |> Ok
-    _, _ -> NotABaby(card) |> Error
-  }
+  state.nursery |> list.prepend(card.id) |> state.with_nursery(state, _) |> Ok
 }
 
 fn from_pile(
@@ -180,26 +183,24 @@ fn from_pile(
 
 fn to_pile(
   state: GameState,
-  card: Card,
-  pile: Pile,
+  card: HandPileCard,
+  to: from_to.PileFromTo,
 ) -> Result(GameState, InvalidTransition) {
-  case card, pile {
-    card.UC(UnicornCard(_, body: BabyUnicorn(_))), _ ->
-      BabyFromToPile(card, pile) |> Error
-    _, state.Draw(_) ->
-      GameState(
-        ..state,
-        draw_pile: state.draw_pile
-          |> list.prepend(card),
+  case to {
+    from_to.Draw(pos) ->
+      state.draw_pile
+      |> util.list_insert_position(pos, card)
+      |> map_error(
+        just(PilePositionOutOfBounds(state.Draw(state.draw_pile), pos)),
       )
-      |> Ok
-    _, state.Discard(_) ->
-      GameState(
-        ..state,
-        discard_pile: state.discard_pile
-          |> list.prepend(card),
+      |> result.map(state.with_draw_pile(state, _))
+    from_to.Discard(pos) ->
+      state.discard_pile
+      |> util.list_insert_position(pos, card)
+      |> map_error(
+        just(PilePositionOutOfBounds(state.Discard(state.discard_pile), pos)),
       )
-      |> Ok
+      |> result.map(state.with_discard_pile(state, _))
   }
 }
 
@@ -259,11 +260,11 @@ fn to_stable(
   |> Ok
 }
 
-fn apply_movement(
+fn apply_transition(
   state: GameState,
-  move: CardMovement,
+  t: StateTransition,
 ) -> Result(GameState, InvalidTransition) {
   state
-  |> apply_from(move.card, move.from)
-  |> result.try(apply_to(_, move.card, move.to))
+  |> apply_from(t)
+  |> result.try(apply_to(_, t))
 }

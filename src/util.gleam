@@ -1,3 +1,4 @@
+import gleam/dict
 import gleam/list
 import gleam/pair
 import gleam/result
@@ -18,6 +19,14 @@ pub fn constant(val: a) -> fn() -> a {
   fn() { val }
 }
 
+pub fn list_get_position(l: List(a), pos: Int) -> Result(a, Nil) {
+  case l, pos {
+    [head, ..], 0 -> Ok(head)
+    [_, ..tail], _ if pos > 0 -> list_get_position(tail, pos - 1)
+    _, _ -> Error(Nil)
+  }
+}
+
 pub fn list_extract_position(
   list: List(member),
   pos: Int,
@@ -28,5 +37,40 @@ pub fn list_extract_position(
       list_extract_position(tail, pos - 1)
       |> result.map(pair.map_second(_, list.prepend(_, head)))
     _, _ -> Error(Nil)
+  }
+}
+
+pub fn list_insert_position(
+  l: List(member),
+  pos: Int,
+  value: member,
+) -> Result(List(member), Nil) {
+  case l, pos {
+    [head, ..tail], _ ->
+      list_insert_position(tail, pos - 1, value)
+      |> result.map(list.prepend(_, head))
+    _, 0 -> l |> list.prepend(value) |> Ok
+    [], _ -> Error(Nil)
+  }
+}
+
+pub fn bag_key_map(b: Bag(a), with: fn(a) -> b) -> Bag(b) {
+  b
+  |> bag.to_list
+  |> list.map(pair.map_first(_, with))
+  |> dict.from_list
+  |> bag.from_map
+}
+
+pub fn result_any(l: List(Result(a, b))) -> List(a) {
+  l
+  |> list.filter(result.is_ok)
+  |> list.map(result.lazy_unwrap(_, fn() { panic }))
+}
+
+pub fn list_pop_head(l: List(a)) -> Result(#(a, List(a)), Nil) {
+  case l {
+    [head, ..tail] -> Ok(#(head, tail))
+    _ -> Error(Nil)
   }
 }

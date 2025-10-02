@@ -1,5 +1,4 @@
 import card.{type HandPileCard, type StableCard}
-import counting_set.{type CountingSet}
 import gleam/result
 import tote/bag.{type Bag}
 import util.{bag_remove_or_error}
@@ -23,6 +22,10 @@ pub fn get_hand(player: Player) -> PlayerHand {
 
 pub fn with_hand(player: Player, hand: PlayerHand) -> Player {
   Player(..player, hand: hand)
+}
+
+pub fn get_stable(player: Player) {
+  player.stable
 }
 
 pub fn with_stable(player: Player, stable: Stable) -> Player {
