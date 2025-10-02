@@ -2,7 +2,7 @@ import filter_types.{
   AnyCard, AnyUnicorn, DowngradeCardFilter, MagicCardFilter, OnlyBabies,
   OnlyEffect, OnlyMagic, OnlyStandard, UpgradeCardFilter,
 }
-import util
+import test_util.{gen_recursive}
 
 import gleam/list
 import qcheck.{from_generators, map, map2, return}
@@ -23,7 +23,7 @@ pub fn card_filter_gen() {
 }
 
 pub fn card_filter_chain_gen() {
-  util.gen_recursive(card_filter_gen() |> map(filter_types.Leaf), fn(g) {
+  gen_recursive(card_filter_gen() |> map(filter_types.Leaf), fn(g) {
     from_generators(map2(g, g, filter_types.And), [map2(g, g, filter_types.Or)])
   })
 }

@@ -4,7 +4,7 @@ import effect.{
   Sacrifice, Sequence, SummonBaby, Then,
 }
 import qcheck.{type Generator, from_generators, list_from, map, map2, return}
-import util
+import test_util.{gen_recursive}
 
 pub fn sacrifice_effect_gen() {
   map2(qcheck.small_strictly_positive_int(), card_filter_gen(), Sacrifice)
@@ -23,7 +23,7 @@ pub fn play_effect_gen() {
 }
 
 pub fn effect_chain_gen() -> Generator(EffectChain) {
-  util.gen_recursive(map(effect_gen(), Plain), fn(g) {
+  gen_recursive(map(effect_gen(), Plain), fn(g) {
     from_generators(map(g, May), [map2(g, g, Then), map(list_from(g), Sequence)])
   })
 }

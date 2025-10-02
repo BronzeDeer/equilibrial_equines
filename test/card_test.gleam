@@ -71,9 +71,9 @@ pub fn up_down_card_gen() {
 }
 
 pub fn hand_pile_card_gen() {
-  from_generators(map(unicorn_card_gen(), card.UC), [
-    map(up_down_card_gen(), card.UD),
-    map(spell_card_gen(), card.SC),
+  from_generators(map(unicorn_card_gen(), card.Unicorn), [
+    map(up_down_card_gen(), card.UpDown),
+    map(spell_card_gen(), card.Spell),
   ])
 }
 

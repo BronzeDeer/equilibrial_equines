@@ -19,9 +19,9 @@ pub type BabyCard {
 }
 
 pub type HandPileCard {
-  UC(UnicornCard)
-  SC(SpellCard)
-  UD(UpDownCard)
+  Unicorn(UnicornCard)
+  Spell(SpellCard)
+  UpDown(UpDownCard)
 }
 
 pub type UnicornStableStatus {
