@@ -1,13 +1,7 @@
-import card.{type UnicornCard}
-import card_test.{
-  magic_card_gen, magic_unicorn_gen, standard_unicorn_gen, ultimate_unicorn_gen,
-  up_down_card_gen,
-}
+import card_test
 import player.{Player}
 import qcheck.{
-  type Generator, alphanumeric_ascii_codepoint, apply, bind, from_generators,
-  given, map, map2, parameter, return, small_non_negative_int as nonneg_int,
-  string_from,
+  alphanumeric_ascii_codepoint, apply, parameter, return, string_from,
 }
 import stable_test.{stable_gen}
 import test_util

@@ -4,7 +4,6 @@ import filter_types.{
   DowngradeCardFilter, MagicCardFilter, OnlyBabies, OnlyEffect, OnlyMagic,
   OnlyStandard, UpgradeCardFilter,
 }
-import gleam/list
 import player
 import tote/bag.{type Bag}
 
