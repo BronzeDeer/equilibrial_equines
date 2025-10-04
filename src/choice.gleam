@@ -1,6 +1,5 @@
 import card.{type HandPileCard}
 import gleam/dict.{type Dict}
-import gleam/function
 import gleam/int
 import gleam/list
 import gleam/pair

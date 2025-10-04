@@ -16,6 +16,14 @@ pub type Player {
   Player(uuid: PlayerId, hand: PlayerHand, stable: Stable)
 }
 
+pub fn get_id(player: Player) {
+  player.uuid
+}
+
+pub fn with_id(player: Player, uuid: PlayerId) {
+  Player(..player, uuid:)
+}
+
 pub fn get_hand(player: Player) -> PlayerHand {
   player.hand
 }

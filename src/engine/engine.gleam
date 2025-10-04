@@ -1,14 +1,9 @@
-import card.{
-  type BabyCard, type HandPileCard, type SpellCard, type StableCard,
-  type UnicornCard, type UpDownCard, UnicornCard,
-}
+import card.{type BabyCard, type HandPileCard, type StableCard}
 import engine/transitions/from_to
-import gleam/dict
 import gleam/list
-import gleam/pair
 import gleam/result.{map_error, try}
-import player.{type Player, type PlayerId, Player}
-import state.{type GameState, type Pile, GameState}
+import player.{type Player, type PlayerId}
+import state.{type GameState, type Pile}
 import tote/bag
 import util.{just}
 
@@ -260,11 +255,20 @@ fn to_stable(
   |> Ok
 }
 
-fn apply_transition(
+pub fn apply_transition(
   state: GameState,
   t: StateTransition,
 ) -> Result(GameState, InvalidTransition) {
   state
   |> apply_from(t)
   |> result.try(apply_to(_, t))
+}
+
+pub fn invert_transition(t: StateTransition) -> StateTransition {
+  case t {
+    StateTransBaby(inner) -> baby.invert(inner) |> StateTransBaby
+    StateTransSpell(inner) -> spell.invert(inner) |> StateTransSpell
+    StateTransUnicorn(inner) -> unicorn.invert(inner) |> StateTransUnicorn
+    StateTransUpDown(inner) -> updown.invert(inner) |> StateTransUpDown
+  }
 }

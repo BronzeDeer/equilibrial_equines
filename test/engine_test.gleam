@@ -22,9 +22,12 @@ import gleam/dict
 import gleam/list
 import gleam/pair
 import gleam/result
+import gleeunit/should
 import player
-import qcheck.{type Generator, bind, from_generators, map, map2, return}
+import qcheck.{type Generator, bind, from_generators, given, map, map2, return}
+import qcheck_gleeunit_utils/test_spec
 import state.{type GameState}
+import state_test
 import test_util.{
   pick_from_list_uniform, pick_from_list_uniform_index, pick_key_uniform,
 }
@@ -308,4 +311,28 @@ pub fn valid_state_transition_gen(state: state.GameState) {
     valid_from_stable_transition_gen(state),
   ]
   |> from_maybe_generators
+}
+
+pub fn with_atleast_one_card_transition_always_possible() {
+  use <- test_spec.make
+
+  use state <- given(state_test.state_gen())
+
+  state |> valid_state_transition_gen |> should.be_ok |> util.just(Nil)
+}
+
+pub fn inverse_transition_test() {
+  use <- test_spec.make
+
+  use state <- given(state_test.state_gen())
+
+  use t <- given(valid_state_transition_gen(state) |> should.be_ok)
+  let inv_t = t |> engine.invert_transition
+
+  state
+  |> engine.apply_transition(t)
+  |> should.be_ok
+  |> engine.apply_transition(inv_t)
+  |> should.be_ok
+  |> should.equal(state)
 }
