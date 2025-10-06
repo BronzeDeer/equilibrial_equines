@@ -70,3 +70,19 @@ pub fn pick_key_uniform(d: Dict(member, _)) -> Result(Generator(member), Nil) {
       |> Ok
   }
 }
+
+pub fn lift_maybe_gen(
+  g: Generator(Result(Generator(a), e)),
+) -> Generator(Result(a, e)) {
+  use r <- bind(g)
+  case r {
+    Error(e) -> e |> Error |> return
+    Ok(inner_g) -> inner_g |> map(Ok)
+  }
+}
+
+pub fn lift_gen_maybe(
+  r: Result(Generator(Result(a, e)), e),
+) -> Generator(Result(a, e)) {
+  r |> return |> lift_maybe_gen |> map(result.flatten)
+}

@@ -298,7 +298,7 @@ pub type MaybeGenerator(a) =
   Result(Generator(a), Nil)
 
 pub fn from_maybe_generators(l: List(MaybeGenerator(a))) -> MaybeGenerator(a) {
-  use #(head, tail) <- result.map(l |> util.result_any |> util.list_pop_head)
+  use #(head, tail) <- result.map(l |> result.values |> util.list_pop_head)
 
   from_generators(head, tail)
 }
@@ -318,7 +318,12 @@ pub fn with_atleast_one_card_transition_always_possible() {
 
   use state <- given(state_test.state_gen())
 
-  state |> valid_state_transition_gen |> should.be_ok |> util.just(Nil)
+  state.nursery
+  |> list.prepend(42)
+  |> state.with_nursery(state, _)
+  |> valid_state_transition_gen
+  |> result.replace(Nil)
+  |> should.be_ok
 }
 
 pub fn inverse_transition_test() {
@@ -333,6 +338,69 @@ pub fn inverse_transition_test() {
   |> engine.apply_transition(t)
   |> should.be_ok
   |> engine.apply_transition(inv_t)
+  |> should.be_ok
+  |> should.equal(state)
+}
+
+pub type TransitionTestError {
+  NoValid
+  Invalid(engine.InvalidTransition)
+}
+
+pub type TransitionSequence =
+  Result(#(GameState, List(StateTransition)), TransitionTestError)
+
+fn state_machine_gen_next(
+  acc: Generator(TransitionSequence),
+) -> Generator(TransitionSequence) {
+  {
+    use maybe_acc <- bind(acc)
+    {
+      use #(cur_state, ts): #(GameState, List(StateTransition)) <- result.try(
+        maybe_acc,
+      )
+
+      use t_gen: Generator(StateTransition) <- result.map(
+        valid_state_transition_gen(cur_state)
+        |> result.replace_error(NoValid),
+      )
+
+      use t: StateTransition <- bind(t_gen)
+
+      cur_state
+      |> engine.apply_transition(t)
+      |> result.map_error(Invalid)
+      |> result.map(pair.new(_, ts |> list.prepend(t)))
+      |> return
+    }
+    |> test_util.lift_gen_maybe
+  }
+}
+
+pub fn transition_sequence_gen(
+  state: GameState,
+  n: Int,
+) -> Generator(TransitionSequence) {
+  // Advance the state machine by n steps, noting the transitions taken
+  list.range(0, n)
+  |> list.fold(#(state, []) |> Ok |> return, fn(acc, _) {
+    state_machine_gen_next(acc)
+  })
+}
+
+pub fn multiple_transitions_and_inverts_test() {
+  use <- test_spec.make
+
+  use n <- given(qcheck.small_non_negative_int())
+  use state <- given(state_test.state_gen())
+
+  use r <- given(transition_sequence_gen(state, n))
+  let #(end_state, ts) = r |> should.be_ok
+
+  assert end_state != state
+
+  ts
+  |> list.try_fold(end_state, engine.apply_transition)
   |> should.be_ok
   |> should.equal(state)
 }

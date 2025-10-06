@@ -62,11 +62,19 @@ pub fn bag_key_map(b: Bag(a), with: fn(a) -> b) -> Bag(b) {
   |> bag.from_map
 }
 
-pub fn result_any(l: List(Result(a, b))) -> List(a) {
-  l
-  |> list.filter(result.is_ok)
-  |> list.map(result.lazy_unwrap(_, fn() { panic }))
-}
+// pub fn result_any(l: List(Result(a, b))) -> List(a) {
+//   l
+//   |> list.filter(result.is_ok)
+//   |> list.map(result.lazy_unwrap(_, fn() { panic }))
+// }
+
+// pub type MaybeT(m, a) {
+//   MaybeT(return: fn(a) -> m, fn(m(Result(a, e))) -> Result(a, e))
+// }
+
+// pub fn result_t(f: ) -> Result(T(a), e) {
+//   todo
+// }
 
 pub fn list_pop_head(l: List(a)) -> Result(#(a, List(a)), Nil) {
   case l {
