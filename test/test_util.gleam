@@ -84,5 +84,8 @@ pub fn lift_maybe_gen(
 pub fn lift_gen_maybe(
   r: Result(Generator(Result(a, e)), e),
 ) -> Generator(Result(a, e)) {
-  r |> return |> lift_maybe_gen |> map(result.flatten)
+  case r {
+    Error(e) -> Error(e) |> return
+    Ok(g) -> g
+  }
 }

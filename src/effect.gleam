@@ -5,6 +5,7 @@ pub type Effect {
   Discard(num: Int)
   Destroy(num: Int, filter: filter_types.CardFilter)
   SummonBaby
+  //TODO: Needs to be generalized to bring from to
   PlayFromHand(filter: filter_types.CardFilter)
 }
 

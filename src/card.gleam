@@ -40,9 +40,11 @@ pub type UnicornCard {
   UnicornCard(meta: CardMeta, body: UnicornBody)
 }
 
+pub type InstantBody
+
 pub type SpellCard {
   MagicCard(meta: CardMeta, body: EffectChain)
-  //InstantCard(meta: CardMeta, body: InstantBody)
+  InstantCard(meta: CardMeta, body: InstantBody)
 }
 
 pub type UpDownCard {

@@ -100,3 +100,68 @@ pub fn is_choice_valid(selection: Selection, choice: Choice) -> Bool {
     _, _ -> False
   }
 }
+
+pub fn is_possible(s: Selection) -> Bool {
+  case s {
+    CardsFromStableSelection(num:, options:, from_same_stable:) -> {
+      let nums =
+        options
+        |> dict.values
+        |> list.map(bag_total)
+
+      case from_same_stable, nums |> list.max(int.compare) {
+        _, Error(_) -> False
+        True, Ok(max) -> num <= max
+        False, _ -> num <= nums |> list.fold(0, int.add)
+      }
+    }
+    HandPileSelection(num:, options:) -> num <= options |> bag_total
+    PlayerSelection(num:, options:) -> num <= options |> set.size
+  }
+}
+
+fn from_stable_to_forced(
+  num: Int,
+  options: Dict(PlayerId, Stable),
+  from_same_stable: Bool,
+) -> Result(Choice, Nil) {
+  case from_same_stable {
+    True -> {
+      let eligble = options |> dict.filter(fn(_, l) { num <= l |> bag_total })
+      case eligble |> dict.values |> list.map(bag.size) {
+        // Single eligble player with exact amount of cards to chose
+        [count] if count == num -> eligble |> CardsFromStable |> Ok
+        _ -> Error(Nil)
+      }
+    }
+    False -> {
+      case
+        options
+        |> dict.values
+        |> list.map(bag.size)
+        |> list.fold(0, int.add)
+      {
+        count if count == num -> options |> CardsFromStable |> Ok
+        _ -> Error(Nil)
+      }
+    }
+  }
+}
+
+pub fn to_forced_choice(s: Selection) -> Result(Choice, Nil) {
+  case s {
+    CardsFromStableSelection(num:, options:, from_same_stable:) ->
+      from_stable_to_forced(num, options, from_same_stable)
+    HandPileSelection(num:, options:) ->
+      case options |> bag.size {
+        count if num == count -> options |> HandPileCards |> Ok
+        _ -> Error(Nil)
+      }
+
+    PlayerSelection(num:, options:) ->
+      case options |> set.size {
+        count if num == count -> options |> Players |> Ok
+        _ -> Error(Nil)
+      }
+  }
+}
